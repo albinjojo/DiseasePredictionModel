@@ -78,6 +78,67 @@ project-root/
 
 ---
 
+## Machine Learning Models
+
+### Model Selection: XGBoost
+
+This system leverages **XGBoost (Extreme Gradient Boosting)** for both disease classification and specialist recommendation. XGBoost was selected for the following technical advantages:
+
+**Why XGBoost:**
+- **Gradient Boosting Efficiency**: Iteratively corrects predictions through sequential tree ensembles, achieving superior accuracy with interpretable decision logic
+- **Binary Feature Optimization**: Naturally handles binary symptom features without preprocessing overhead
+- **Non-Linear Pattern Recognition**: Captures complex symptom-disease relationships that linear classifiers cannot model
+- **Regularization Mechanisms**: Built-in L1/L2 regularization prevents overfitting on synthetic training data
+- **Calibrated Probabilities**: Produces well-calibrated confidence scores essential for ranking multiple disease hypotheses
+- **Production-Ready**: Fast inference times suitable for real-time interactive systems
+
+### Model Architecture Overview
+
+**Dual-Model Pipeline:**
+
+1. **Disease Classification Model** (`disease_model.pkl`)
+   - Input: Binary symptom vector
+   - Output: Probability distribution across all disease categories
+   - Task: Multi-class classification predicting the most likely disease condition
+   - Architecture: Gradient-boosted tree ensemble with categorical cross-entropy optimization
+
+2. **Specialist Recommendation Model** (`doctor_model.pkl`)
+   - Input: Binary symptom vector
+   - Output: Probability distribution across specialist disciplines
+   - Task: Multi-class classification predicting appropriate medical specialist
+   - Architecture: Gradient-boosted tree ensemble optimized for specialist routing
+
+### How Models Process Predictions
+
+**Inference Pipeline:**
+
+1. User provides free-text symptom input (e.g., "fever, cough, breathing problem")
+2. Natural language input is mapped to binary symptom features using pre-defined mappings
+3. Disease model generates probability scores for all disease classes
+4. Top 3 highest-probability diseases are extracted with confidence percentages
+5. Specialist model independently predicts the recommended medical specialty
+6. Results are formatted and presented to the user with ranked confidence metrics
+
+### Model Training & Specifications
+
+**Training Approach:**
+- Supervised learning with balanced dataset to prevent class imbalance bias
+- Features: 50+ binary symptom columns normalized to {0, 1}
+- Training objective: Minimize log loss (cross-entropy) across disease categories
+- Regularization: XGBoost default hyperparameters optimized for generalization
+
+**Key Hyperparameters:**
+- Tree depth: Controlled to prevent overfitting on synthetic patterns
+- Learning rate: Moderate step size for stable convergence
+- Boosting rounds: Sufficient iterations for pattern convergence without memorization
+
+**Output Characteristics:**
+- Confidence scores: Softmax-calibrated probabilities summing to 100%
+- Ranking: Diseases sorted by descending probability
+- Uncertainty quantification: Low-probability predictions indicate model confidence limitations
+
+---
+
 ## Installation & Execution
 
 ### Prerequisites
