@@ -9,7 +9,6 @@ disease_encoder = joblib.load("disease_encoder.pkl")
 doctor_encoder = joblib.load("doctor_encoder.pkl")
 symptom_columns = joblib.load("symptom_columns.pkl")
 
-# Mapping of user input phrases to symptom column names because user input can vary widely
 symptom_map = {
     "fever": "fever",
     "temperature": "fever",
@@ -86,23 +85,22 @@ while True:
     X_new = X_new.reshape(1, -1)
 
     disease_probs = disease_model.predict_proba(X_new)[0]
-    top3_idx = np.argsort(disease_probs)[-3:][::-1]
-    top3_diseases = disease_encoder.inverse_transform(top3_idx)
-    top3_probs = disease_probs[top3_idx]
+    best_idx = np.argmax(disease_probs)
+    best_disease = disease_encoder.inverse_transform([best_idx])[0]
+    best_prob = disease_probs[best_idx]
 
     doctor_pred = doctor_model.predict(X_new)
     doctor_name = doctor_encoder.inverse_transform(doctor_pred)[0]
 
     print("\n========================================")
-    print("SYMPTOM-BASED HEALTH ASSESSMENT")
+    print("PREDICTION RESULT")
     print("========================================\n")
 
-    print("Possible Conditions (Top 3):")
+    print("Most Likely Disease:")
     print("----------------------------------------")
-    for i, (d, p) in enumerate(zip(top3_diseases, top3_probs), start=1):
-        print(f"{i}. {d:<25} : {p * 100:6.2f}%")
+    print(f"{best_disease}  : {best_prob * 100:.2f}%")
 
-    print("\nRecommended Specialist:")
+    print("\nRecommended Doctor:")
     print("----------------------------------------")
     print(doctor_name)
 
