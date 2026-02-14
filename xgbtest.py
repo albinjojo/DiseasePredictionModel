@@ -1,7 +1,11 @@
+from flask import Flask, request, jsonify
 import numpy as np
 import joblib
 import re
 
+app = Flask(__name__)
+
+# Load models once when server starts
 disease_model = joblib.load("disease_model.pkl")
 doctor_model = joblib.load("doctor_model.pkl")
 
@@ -61,14 +65,15 @@ symptom_map = {
     "poor growth": "poor_growth_child"
 }
 
-print("\nSymptom-Based Disease Prediction System")
-print("Type 'exit' to quit\n")
 
-while True:
-    user_text = input("Enter symptoms: ").strip().lower()
+@app.route("/predict", methods=["POST"])
+def predict():
+    data = request.get_json()
 
-    if user_text in ["exit", "quit"]:
-        break
+    if not data or "symptoms" not in data:
+        return jsonify({"error": "No symptoms provided"}), 400
+
+    user_text = data["symptoms"].lower()
 
     X_new = np.zeros(len(symptom_columns))
 
@@ -79,33 +84,24 @@ while True:
                 X_new[idx] = 1
 
     if X_new.sum() == 0:
-        print("\nNo recognizable symptoms detected.\n")
-        continue
+        return jsonify({"error": "No recognizable symptoms detected"}), 400
 
     X_new = X_new.reshape(1, -1)
 
     disease_probs = disease_model.predict_proba(X_new)[0]
     best_idx = np.argmax(disease_probs)
     best_disease = disease_encoder.inverse_transform([best_idx])[0]
-    best_prob = disease_probs[best_idx]
+    best_prob = float(disease_probs[best_idx])
 
     doctor_pred = doctor_model.predict(X_new)
     doctor_name = doctor_encoder.inverse_transform(doctor_pred)[0]
 
-    print("\n========================================")
-    print("PREDICTION RESULT")
-    print("========================================\n")
+    return jsonify({
+        "disease": best_disease,
+        "confidence": round(best_prob * 100, 2),
+        "recommended_doctor": doctor_name
+    })
 
-    print("Most Likely Disease:")
-    print("----------------------------------------")
-    print(f"{best_disease}  : {best_prob * 100:.2f}%")
 
-    print("\nRecommended Doctor:")
-    print("----------------------------------------")
-    print(doctor_name)
-
-    print("\n----------------------------------------")
-    print("This result is based on symptom patterns only.")
-    print("It is not a medical diagnosis.")
-    print("Please consult a qualified doctor for confirmation.")
-    print("========================================\n")
+if __name__ == "__main__":
+    app.run(debug=True)
