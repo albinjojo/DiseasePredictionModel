@@ -1,184 +1,237 @@
-# **Symptom-Based Disease & Doctor Recommendation System**
+# Symptom-Based Disease & Doctor Recommendation System
+
+---
 
 ## Overview
 
 This project is an advanced symptom-to-diagnosis intelligence system engineered to deliver:
-- Real-time prediction of the three most probable disease conditions
+
+- Real-time prediction of the most probable disease condition(s)
 - Intelligent specialist routing to the appropriate medical practitioner
 
-The system accepts natural language symptom descriptions from users, performs intelligent feature mapping to structured clinical attributes, and leverages state-of-the-art pre-trained machine learning models to generate clinical predictions. This platform is optimized for educational research, clinical prototyping, and exploratory medical AI applications.
+The system accepts natural language symptom descriptions, maps them into structured binary features, and uses pre-trained XGBoost classification models to generate clinical predictions.
+
+This project is designed for educational research, prototyping, and demonstration of ML web integration.
+
+---
+
+## About the Project
+
+This system is built on a structured symptom dataset with binary feature encoding and balanced disease classes. It uses two independent XGBoost models: one for disease classification and one for specialist recommendation. XGBoost is chosen for its strong performance on tabular data, ability to capture non-linear symptom patterns, and built-in regularization for generalization on synthetic datasets.
+
+At runtime, the pipeline ingests free-text symptoms, maps phrases to known symptom features, generates a binary feature vector, scores disease probabilities, and outputs the top result(s) with a recommended specialist.
 
 ---
 
 ## Dataset Architecture
 
-The foundation of this project rests on a comprehensively structured medical dataset carefully curated to reflect prevalent health conditions across diverse demographic populations.
+The system is trained on a structured dataset representing common health conditions.
 
-### Key Specifications
-- Data Format: Single patient record per row with complete symptom profiling
-- Feature Encoding: Binary-valued symptom representation (0/1) for optimal model performance
-- Class Distribution: Carefully balanced across all disease categories to prevent bias
-- Terminology: Accessible lay-language symptom descriptions without requiring medical expertise
+### Key Characteristics
 
-### Data Source
+- Each row represents one patient
+- Symptoms are encoded as binary values (0 = absent, 1 = present)
+- Dataset is balanced across disease classes
+- Symptom names use layman terminology
+
+### Dataset File
+
 ```
 indian_symptom_dataset_layman_50plus_with_doctor.csv
 ```
 
 ### Data Schema
-- Input Features: Complete symptom vector with binary classification  
+
+| fever | cough | stomach_pain | tiredness | ... | disease   | doctor_type   |
+| ----- | ----- | ------------ | --------- | --- | --------- | ------------- |
+| 1     | 1     | 0            | 1         | ... | pneumonia | pulmonologist |
+
+- Input Features: Binary symptom vector
 - Output Labels:
-  - `disease` – clinical condition identifier
-  - `doctor_type` – recommended specialist discipline
 
-Sample Data Structure:
-
-| fever | cough | stomach_pain | tiredness | ... | disease | doctor_type |
-|------|------|--------------|-----------|-----|---------|-------------|
-| 1 | 1 | 0 | 1 | ... | pneumonia | pulmonologist |
+  - `disease`
+  - `doctor_type`
 
 ---
 
-## System Architecture
+## Project Structure
 
 ```
 project-root/
 │
 ├── indian_symptom_dataset_layman_50plus_with_doctor.csv
-│   └── [Training & inference dataset]
 │
 ├── disease_model.pkl
-│   └── [Pre-trained XGBoost disease classifier]
-│
 ├── doctor_model.pkl
-│   └── [Pre-trained XGBoost specialist recommender]
-│
 ├── disease_encoder.pkl
 ├── doctor_encoder.pkl
 ├── symptom_columns.pkl
-│   └── [Model artifacts: encoders & feature mappings]
 │
+├── xgbtestonterminal.py
 ├── xgbtest.py
-│   └── [Inference engine & CLI interface]
 │
 └── README.md
-    └── [Project documentation]
 ```
-
-### Component Specifications
-
-- **indian_symptom_dataset_layman_50plus_with_doctor.csv**  
-  Core training dataset: symptom features linked to disease outcomes and specialist recommendations.
-
-- **xgbtest.py**  
-  Production inference module. Implements interactive command-line interface for real-time prediction. Accepts free-text symptom input and returns calibrated disease probability scores with specialist recommendations.
-
-- **Model Artifacts (*.pkl)**  
-  Serialized machine learning models, label encoders, and feature metadata. Required for deployment-stage inference.
 
 ---
 
-## Machine Learning Models
+## File Responsibilities
 
-### Model Selection: XGBoost
+### xgbtestonterminal.py
 
-This system leverages **XGBoost (Extreme Gradient Boosting)** for both disease classification and specialist recommendation. XGBoost was selected for the following technical advantages:
-
-**Why XGBoost:**
-- **Gradient Boosting Efficiency**: Iteratively corrects predictions through sequential tree ensembles, achieving superior accuracy with interpretable decision logic
-- **Binary Feature Optimization**: Naturally handles binary symptom features without preprocessing overhead
-- **Non-Linear Pattern Recognition**: Captures complex symptom-disease relationships that linear classifiers cannot model
-- **Regularization Mechanisms**: Built-in L1/L2 regularization prevents overfitting on synthetic training data
-- **Calibrated Probabilities**: Produces well-calibrated confidence scores essential for ranking multiple disease hypotheses
-- **Production-Ready**: Fast inference times suitable for real-time interactive systems
-
-### Model Architecture Overview
-
-**Dual-Model Pipeline:**
-
-1. **Disease Classification Model** (`disease_model.pkl`)
-   - Input: Binary symptom vector
-   - Output: Probability distribution across all disease categories
-   - Task: Multi-class classification predicting the most likely disease condition
-   - Architecture: Gradient-boosted tree ensemble with categorical cross-entropy optimization
-
-2. **Specialist Recommendation Model** (`doctor_model.pkl`)
-   - Input: Binary symptom vector
-   - Output: Probability distribution across specialist disciplines
-   - Task: Multi-class classification predicting appropriate medical specialist
-   - Architecture: Gradient-boosted tree ensemble optimized for specialist routing
-
-### How Models Process Predictions
-
-**Inference Pipeline:**
-
-1. User provides free-text symptom input (e.g., "fever, cough, breathing problem")
-2. Natural language input is mapped to binary symptom features using pre-defined mappings
-3. Disease model generates probability scores for all disease classes
-4. Top 3 highest-probability diseases are extracted with confidence percentages
-5. Specialist model independently predicts the recommended medical specialty
-6. Results are formatted and presented to the user with ranked confidence metrics
-
-### Model Training & Specifications
-
-**Training Approach:**
-- Supervised learning with balanced dataset to prevent class imbalance bias
-- Features: 50+ binary symptom columns normalized to {0, 1}
-- Training objective: Minimize log loss (cross-entropy) across disease categories
-- Regularization: XGBoost default hyperparameters optimized for generalization
-
-**Key Hyperparameters:**
-- Tree depth: Controlled to prevent overfitting on synthetic patterns
-- Learning rate: Moderate step size for stable convergence
-- Boosting rounds: Sufficient iterations for pattern convergence without memorization
-
-**Output Characteristics:**
-- Confidence scores: Softmax-calibrated probabilities summing to 100%
-- Ranking: Diseases sorted by descending probability
-- Uncertainty quantification: Low-probability predictions indicate model confidence limitations
+- CLI based testing interface
+- Accepts symptom input via terminal
+- Runs predictions locally
+- Displays ranked disease results and recommended doctor
+- Used for quick model validation
 
 ---
 
-## Installation & Execution
+### xgbtest.py
 
-### Prerequisites
+- Flask API implementation
+- Exposes `/predict` endpoint
+- Accepts JSON symptom input
+- Returns structured JSON response
+- Designed for integration with PHP or web applications
 
-Requires Python 3.9 or later.
+---
 
-Install required dependencies:
-```bash
-pip install numpy pandas scikit-learn xgboost joblib
+### Model Artifacts (.pkl files)
+
+- `disease_model.pkl` - Trained XGBoost disease classifier
+- `doctor_model.pkl` - Trained XGBoost specialist classifier
+- `disease_encoder.pkl` - Label encoder for disease names
+- `doctor_encoder.pkl` - Label encoder for specialist names
+- `symptom_columns.pkl` - Feature ordering metadata
+
+---
+
+## Machine Learning Design
+
+### Model Type: XGBoost (Gradient Boosted Decision Trees)
+
+Two independent models are used:
+
+### 1. Disease Classification Model
+
+- Multi-class classification
+- Input: Binary symptom vector
+- Output: Probability distribution across disease classes
+- Objective: Multi-class log loss
+
+### 2. Specialist Recommendation Model
+
+- Multi-class classification
+- Input: Same symptom vector
+- Output: Recommended medical specialist
+- Operates independently from disease prediction
+
+---
+
+## Prediction Pipeline
+
+1. User enters symptom description
+2. Text is mapped to structured binary features
+3. Feature vector passed to disease model
+4. Probabilities computed across all diseases
+5. Top results extracted (or highest probability)
+6. Specialist model predicts doctor type
+7. Results returned to CLI or API response
+
+---
+
+## Running the System
+
+### Requirements
+
+Python 3.9+
+
+Install dependencies using the requirements file:
+
+```
+pip install -r requirements.txt
 ```
 
-### Running the System
+---
 
-Execute the inference engine:
-```bash
+## Running CLI Version (Terminal Testing)
+
+```
+python xgbtestonterminal.py
+```
+
+Used for:
+
+- Model validation
+- Local testing
+- Demonstration without web integration
+
+---
+
+## Running Flask API Version
+
+```
 python xgbtest.py
 ```
 
-Example Execution:
+API Endpoint:
+
 ```
-Enter symptoms: fever cough breathing problem
-
-Predicted Conditions (Confidence Ranking):
-1. pneumonia            : 62.10%
-2. tuberculosis         : 21.45%
-3. covid19              :  9.80%
-
-Recommended Specialist:
-pulmonologist
+POST http://127.0.0.1:5000/predict
 ```
 
-Exit the application with `Ctrl + C`.
+Example Request:
+
+```json
+{
+  "symptoms": "fever cough breathing problem"
+}
+```
+
+Example Response:
+
+```json
+{
+  "disease": "pneumonia",
+  "confidence": 72.45,
+  "recommended_doctor": "pulmonologist"
+}
+```
+
+This API can be integrated with:
+
+- PHP backend
+- Web frontend
+- Postman testing
+- Other REST clients
 
 ---
 
-## Important Disclaimers & Limitations
+## System Architecture (Web Integration)
 
-- **Non-Medical Device**: This system is not a medical diagnostic tool and must not be used for clinical decision-making
-- **Evidence Scope**: Predictions derive exclusively from symptom pattern recognition without clinical validation
-- **Incomplete Assessment**: No laboratory diagnostics, imaging, or clinical examination data are incorporated
-- **Dataset Nature**: Training data is synthetically generated and designed for educational and prototyping scenarios only
+```
+User -> PHP Website -> Flask API -> ML Models -> Flask -> PHP -> User
+```
+
+All components can run locally on the same machine.
+
+---
+
+## Limitations
+
+- Not a medical diagnostic system
+- No laboratory or imaging data included
+- Based solely on symptom pattern recognition
+- Dataset is synthetic and intended for educational use
+
+---
+
+## Intended Use
+
+- Academic projects
+- ML web integration demonstrations
+- Health AI prototyping
+- Model deployment practice
 
 ---
